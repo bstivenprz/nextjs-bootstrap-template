@@ -1,10 +1,28 @@
 module.exports = {
   content: [
     './public/**/*.html',
-    './pages/**/*.{js,ts,jsx,tsx,html,css}'
+    './src/pages/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}'
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'primary': '#FF40FC',
+        'secundary': '#6064FF',
+        'accent': '#FFB7C7'
+      },
+      fontFamily: {
+        rebrand: "'Rebrand Txt', sans-serif"
+      }
+    },
   },
-  plugins: [],
+  variants: {
+    extend: {
+      backgroundColor: ['group-hover'],
+      textColor: ['group-hover'],
+      transform: ['group-hover'],
+      translate: ['group-hover'],
+    },
+  },
+  plugins: [require('@tailwindcss/line-clamp')],
 }

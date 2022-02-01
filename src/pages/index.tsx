@@ -11,9 +11,15 @@ const Home: NextPage = () => {
       </Head>
 
       <main>
-        <h1 className="text-3xl">
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+        <h1>Luegopago</h1>
+        <h2 className="text-primary">Luegopago</h2>
+        <h3 className="text-secundary">Luegopago</h3>
+        <h4 className="text-accent">Luegopago</h4>
+        <h5 className="text-white">Luegopago</h5>
+        <h6>Luegopago</h6>
+        <p>Body 1</p>
+        <a href="#">Link</a>
+        <caption>Caption</caption>
       </main>
     </div>
   );

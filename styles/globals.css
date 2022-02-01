@@ -1,3 +1,55 @@
+/** Rebrand Font */
+@import './font/stylesheet.css';
+
+/** Tailwindcss */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/** Overwrite default base tags */
+@layer base {
+  /** Overwrite default font-family */
+  body {
+    @apply font-rebrand bg-gray-50;
+  }
+
+  main {
+    @apply md:container md:mx-auto px-4;
+  }
+
+  h1 {
+    @apply text-8xl font-normal;
+  }
+
+  h2 {
+    @apply text-6xl font-bold;
+  }
+
+  h3 {
+    @apply text-5xl font-black;
+  }
+
+  h4 {
+    @apply text-4xl font-medium;
+  }
+
+  h5 {
+    @apply text-3xl font-medium;
+  }
+
+  h6 {
+    @apply text-2xl font-medium;
+  }
+
+  p {
+    @apply font-normal;
+  }
+
+  caption {
+    @apply text-xs font-normal;
+  }
+
+  a {
+    @apply text-primary hover:underline;
+  }
+}
