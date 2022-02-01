@@ -2,21 +2,61 @@
   "name": "luegopago",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
+    "build:export": "next build && next export",
+    "dev": "next dev",
+    "export": "next export",
+    "format": "yarn prettier --write pages/. src/.",
+    "lint": "next lint",
+    "prepare": "husky install",
     "start": "next start",
-    "lint": "next lint"
+    "test": "jest",
+    "test:build": "npm-run-all test build",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.0",
+    "@tailwindcss/line-clamp": "^0.3.1",
+    "axios": "^0.25.0",
     "next": "12.0.9",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "react-hook-form": "^7.25.3",
+    "swr": "^1.2.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^16.1.0",
+    "@commitlint/config-conventional": "^16.0.0",
+    "@sentry/nextjs": "^6.17.3",
+    "@testing-library/jest-dom": "^5.16.1",
+    "@testing-library/react": "^12.1.2",
+    "@testing-library/user-event": "^13.5.0",
     "@types/node": "17.0.13",
     "@types/react": "17.0.38",
+    "autoprefixer": "^10.4.2",
+    "babel-loader": "^8.2.3",
     "eslint": "8.8.0",
     "eslint-config-next": "12.0.9",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-jest": "^26.0.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "eslint-plugin-testing-library": "^5.0.4",
+    "husky": "^7.0.4",
+    "jest": "^27.4.7",
+    "next-seo": "^5.0.0",
+    "next-sitemap": "^2.1.6",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.5",
+    "prettier": "^2.5.1",
+    "prop-types": "^15.8.1",
+    "tailwindcss": "^3.0.18",
     "typescript": "4.5.5"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   }
 }

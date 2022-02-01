@@ -1,3 +1,58 @@
 {
-  "extends": "next/core-web-vitals"
+  "root": true,
+  "env": {
+    "jest/globals": true
+  },
+  "ignorePatterns": [
+    "node_modules/*",
+    ".next/*",
+    "*.config.*"
+  ],
+  "extends": "next/core-web-vitals",
+  "plugins": [
+    "jest",
+    "testing-library"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/__tests__/**/*.[jt]s?(x)",
+        "**/?(*.)+(spec|test).[jt]s?(x)"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "settings": {
+        "react": {
+          "version": "dialect"
+        }
+      },
+      "extends": [
+        "eslint:recommended",
+        "plugin:react-hooks/recommended",
+        "plugin:testing-library/react",
+        "plugin:prettier/recommended",
+        "prettier"
+      ],
+      "rules": {
+        "react/react-in-jsx-scope": "off",
+        "@typescript-eslint/no-namespace": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "prettier/prettier": [
+          "error",
+          {
+            "endOfLine": "auto"
+          },
+          {
+            "usePrettierrc": true
+          }
+        ],
+        "semi": [
+          2,
+          "always"
+        ],
+        "jsx-a11y/anchor-is-valid": "off"
+      }
+    }
+  ]
 }

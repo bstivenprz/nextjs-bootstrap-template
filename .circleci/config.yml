@@ -1,0 +1,137 @@
+# This config is equivalent to both the '.circleci/extended/orb-free.yml' and the base '.circleci/config.yml'
+version: 2.1
+
+# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
+# See: https://circleci.com/docs/2.0/orb-intro/
+orbs:
+  digitalocean: digitalocean/cli@0.1.1
+  docker: circleci/docker@1.0.1
+  kubernetes: circleci/kubernetes@0.12.0
+  gcp-gcr: circleci/gcp-gcr@0.7.1
+
+jobs:
+  # Build Next.js project
+  build:
+    docker:
+      - image: circleci/node:latest
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: yarn
+      - save_cache:
+          paths:
+            - ./node_modules
+          key: dependecy-cache-{{ checksum "yarn-lock.json" }}
+      - run:
+          name: Run Build
+          command: yarn build
+  # Build and publish Docker Image to DigitalOcean Registry
+  do-build-and-push:
+    machine:
+      image: ubuntu-1604:202007-01
+    parameters:
+      tag:
+        description: |
+          Tag to use for image.
+        type: string
+      registry:
+        description: |
+          Registry to use for image.
+        type: string
+      image:
+        description: |
+          Image name.
+        type: string
+      node-env:
+        type: string
+      wordpress-uri:
+        type: string
+    environment:
+      NODE_ENV: << parameters.node-env >>
+      WORDPRESS_URI: << parameters.wordpress-uri >>
+    steps:
+      #- setup_remote_docker:
+      #    docker_layer_caching: false
+      #    version: 19.03.13
+      - checkout
+      - attach_workspace:
+          at: /home/circleci/project
+      - run: cat /home/circleci/project/.env.production | envsubst > .env.production.local
+      - run: cat .env.production.local
+      - run: export NODE_OPTIONS=--openssl-legacy-provider
+      - digitalocean/install
+      - digitalocean/initialize:
+          digitalocean-access-token: DIGITALOCEAN_ACCESS_TOKEN
+      - run: doctl registry login
+      - docker/build:
+          image: << parameters.image >>
+          registry: << parameters.registry >>
+          tag: << parameters.tag >>
+      - docker/push:
+          image: << parameters.image >>
+          registry: << parameters.registry >>
+          tag: << parameters.tag >>
+  # Redeploy DigitalOcean K8S Cluster
+  do-deploy-cluster:
+    executor: gcp-gcr/default
+    parameters:
+      tag:
+        type: string
+      cluster-name:
+        type: string
+      container:
+        type: string
+      namespace:
+        type: string
+    environment:
+      IMAGE: << parameters.container >>
+    steps:
+      - checkout
+      - run: cat /home/circleci/project/luegopago-site-deployment.yml | envsubst > luegopago-site-deployment-latest.yml
+      - run: cat luegopago-site-deployment-latest.yml
+      - kubernetes/install-kubectl
+      - digitalocean/install
+      - digitalocean/initialize:
+          digitalocean-access-token: DIGITALOCEAN_ACCESS_TOKEN
+      - run: doctl kubernetes cluster kubeconfig save << parameters.cluster-name >>
+      - kubernetes/create-or-update-resource:
+          get-rollout-status: true
+          namespace: << parameters.namespace >>
+          resource-file-path: luegopago-site-deployment-latest.yml
+          resource-name: deployment/luegopago-site
+      - run: kubectl -n << parameters.namespace >> get svc
+
+# Workflows
+workflows:
+  version: 2
+  production:
+    jobs:
+      - do-build-and-push:
+          name: Building Docker Image
+          filters:
+            tags:
+              only: /(?<=^[Vv]|^)(?:(?<major>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<minor>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<patch>(?:0|[1-9](?:(?:0|[1-9])+)*))(?:-(?<prerelease>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*)))*))?(?:[+](?<build>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+)))*))?)$/
+            branches:
+              ignore: /.*/
+          context: luegopago-production
+          tag: $CIRCLE_SHA1
+          image: luegopago/luegopago
+          registry: registry.digitalocean.com
+          node-env: development
+          wordpress-uri: https://wp.dev-luegopago.tk
+      - do-deploy-cluster:
+          filters:
+            tags:
+              only: /(?<=^[Vv]|^)(?:(?<major>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<minor>(?:0|[1-9](?:(?:0|[1-9])+)*))[.](?<patch>(?:0|[1-9](?:(?:0|[1-9])+)*))(?:-(?<prerelease>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:0|[1-9](?:(?:0|[1-9])+)*)))*))?(?:[+](?<build>(?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+))(?:[.](?:(?:(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?|(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)(?:[A-Za-z]|-)(?:(?:(?:0|[1-9])|(?:[A-Za-z]|-))+)?)|(?:(?:0|[1-9])+)))*))?)$/
+            branches:
+              ignore: /.*/
+          name: Deploying LuegopaGO Site
+          namespace: "lp"
+          tag: $CIRCLE_SHA1
+          context:
+            - luegopago-production
+          container: registry.digitalocean.com/luegopago/luegopago
+          cluster-name: k8s-luegopago-production
+          requires:
+            - Building Docker Image
